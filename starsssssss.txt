@@ -1,0 +1,75 @@
+SOURCE CODE 
+import pandas as pd import os from skimage.transform import resize from skimage.io import imread import numpy as np import matplotlib.pyplot as plt from sklearn import svm 
+from sklearn.model_selection import GridSearchCV from sklearn.model_selection import train_test_split from sklearn.metrics import accuracy_score 
+from sklearn.metrics import classification_report,confusion_matrix from skimage import io, transform from sklearn import preprocessing import numpy as np import pickle import seaborn as sns 
+ 
+Categories=['star','galaxy'] flat_data_arr=[] #input array target_arr=[] #output array datadir=r"Dataset" 
+flat_data_file = os.path.join(datadir, 'flat_data.npy') target_file = os.path.join(datadir, 'target.npy') 
+ 
+if os.path.exists(flat_data_file) and os.path.exists(target_file): 
+    # Load the existing arrays     flat_data = np.load(flat_data_file)     target = np.load(target_file) else: 
+    #path which contains all the categories of images     for i in Categories: 
+        print(f'loading... category : {i}')         path=os.path.join(datadir,i)         for img in os.listdir(path): 
+            img_array=imread(os.path.join(path,img))             img_resized=resize(img_array,(150,150,3))             flat_data_arr.append(img_resized.flatten())             target_arr.append(Categories.index(i))             print(f'loaded category:{i} successfully')             flat_data=np.array(flat_data_arr)             target=np.array(target_arr)     # Save the arrays 
+    np.save(os.path.join(datadir, 'flat_data.npy'), flat_data)     np.save(os.path.join(datadir, 'target.npy'), target) 
+ 
+#dataframe df=pd.DataFrame(flat_data) df['Target']=target df.shape plt.figure(figsize=(8, 6)) ax = sns.countplot(data=df, x='Target') plt.xlabel('Target', fontsize=12) plt.ylabel('Count', fontsize=12) plt.title('Count Plot for Target', fontsize=14) 
+ 
+# Add count labels on top of the bars for p in ax.patches: 
+    ax.annotate(f"{p.get_height()}",  
+                (p.get_x() + p.get_width() / 2., p.get_height()),                  ha='center', va='center', fontsize=11, color='black', xytext=(0, 5),                 textcoords='offset points') 
+ 
+plt.show() #input data x=df.iloc[:,:-1] #output data y=df.iloc[:,-1] y 
+ 
+# Splitting the data into training and testing sets 
+x_train,x_test,y_train,y_test=train_test_split(x,y,test_size=0.20,random_state=77) from sklearn.svm import SVC filename='Svm_Classifier.pkl' if os.path.exists('Svm_Classifier.pkl'):     # Load the trained model from the Pickle file     with open(filename, 'rb') as Svm_Model_pkl: 
+        svc = pickle.load(Svm_Model_pkl)         y_pred1=svc.predict(x_test) 
+        Acc=accuracy_score(y_test,y_pred1)*100         print("Accuracy",Acc) else:     svc = SVC(kernel='linear')  # You can also try other kernels like 'rbf' or 'poly' 
+    # Train the SVM classifier on the training data     svc.fit(x_train, y_train)     y_pred1=svc.predict(x_test) 
+    Acc=accuracy_score(y_test,y_pred1)*100     print("Accuracy",Acc) 
+    # Dump the trained svm classifier with Pickle     filename = 'Svm_Classifier.pkl' 
+    # Open the file to save as pkl file 
+    Svm_Model_pkl = open(filename, 'wb')     pickle.dump(svc, Svm_Model_pkl) 
+    # Close the pickle instances 
+    Svm_Model_pkl.close() 
+ 
+ 
+Acc=accuracy_score(y_test,y_pred1)*100 print("Accuracy",Acc) 
+ 
+ 
+cm=confusion_matrix(y_test,y_pred1) cm 
+ 
+ 
+report=classification_report(y_test,y_pred) print('ClassificationReport:\n\n',report) 
+ 
+class_labels=['star','galaxy'] plt.figure(figsize=(8, 6)) 
+sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=class_labels, yticklabels=class_labels) plt.xlabel("Predicted Label") plt.ylabel("True Label") 
+plt.title("Support vector Classifier Confusion Matrix") plt.show() 
+ 
+from sklearn.ensemble import RandomForestClassifier 
+ 
+rf=RandomForestClassifier() 
+ 
+if os.path.exists('RF_Classifier.pkl'): 
+    # Load the trained model from the Pickle file     with open(filename, 'rb') as RF_Model_pkl: 
+        rf = pickle.load(RF_Model_pkl)         y_pred=rf.predict(x_test) 
+        Acc=accuracy_score(y_test,y_pred)*100         print("Accuracy",Acc) else: 
+    rf.fit(x_train,y_train)     y_pred=rf.predict(x_test) 
+    Acc=accuracy_score(y_test,y_pred)*100     print("Accuracy",Acc) 
+    # Dump the trained Naive Bayes classifier with Pickle     filename = 'RF_Classifier.pkl' 
+    # Open the file to save as pkl file     RF_Model_pkl = open(filename, 'wb')     pickle.dump(rf, RF_Model_pkl) 
+    # Close the pickle instances 
+    RF_Model_pkl.close() 
+Acc=accuracy_score(y_test,y_pred)*100 print("Accuracy",Acc) cm=confusion_matrix(y_test,y_pred) cm 
+class_labels=['star','galaxy'] plt.figure(figsize=(8, 6)) 
+sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=class_labels, yticklabels=class_labels) plt.xlabel("Predicted Label") plt.ylabel("True Label") plt.title("Confusion Matrix") plt.show() 
+ 
+report=classification_report(y_test,y_pred) print(report) path = r"test images" 
+Categories = {0:'star',1:'galaxy'}  # Define your categories with corresponding labels for filename in os.listdir(path):     img_path = os.path.join(path, filename)  # Construct the complete image path     img = imread(img_path) 
+     
+    plt.imshow(img)     plt.show() 
+     
+    img_resize = resize(img, (150, 150, 3))     l = [img_resize.flatten()] 
+     
+    # Make predictions using your pre-trained model     prediction = rf.predict(l)[0] 
+    predicted_category = Categories[prediction]     print("The predicted image is:", predicted_category) 
